@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yash Bairagi — Video Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black: #060606;
+  --gold: #c8a84b;
+  --gold-light: #e2c56a;
+  --gold-dim: rgba(200,168,75,0.25);
+  --white: #f0ebe2;
+  --muted: #6a6560;
+  --card: rgba(255,255,255,0.03);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: 'DM Sans', sans-serif;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* CURSOR */
+#cur { width:8px; height:8px; background:var(--gold); border-radius:50%; position:fixed; top:0; left:0; pointer-events:none; z-index:9999; transform:translate(-50%,-50%); mix-blend-mode:screen; transition:transform .1s; }
+#cur-ring { width:36px; height:36px; border:1px solid rgba(200,168,75,.35); border-radius:50%; position:fixed; top:0; left:0; pointer-events:none; z-index:9998; transform:translate(-50%,-50%); transition:all .18s ease; }
+#cur-ring.h { transform:translate(-50%,-50%) scale(2.2); border-color:var(--gold); }
+
+/* GRAIN */
+body::after {
+  content:''; position:fixed; inset:0; z-index:1; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.045'/%3E%3C/svg%3E");
+  opacity:.4;
+}
+
+/* NAV */
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:200;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:22px 56px;
+  background:linear-gradient(to bottom,rgba(6,6,6,.92) 60%,transparent);
+  backdrop-filter:blur(4px);
+}
+.logo { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:5px; color:var(--gold); }
+.nav-wa {
+  display:flex; align-items:center; gap:9px;
+  background:rgba(37,211,102,.12); border:1px solid rgba(37,211,102,.3);
+  color:#25d366; padding:9px 18px;
+  text-decoration:none; font-size:12px; letter-spacing:2px; text-transform:uppercase; font-weight:500;
+  transition:all .3s;
+}
+.nav-wa:hover { background:rgba(37,211,102,.2); border-color:#25d366; }
+.nav-wa svg { flex-shrink:0; }
+
+/* ─── HERO ─── */
+#hero {
+  min-height:100vh;
+  display:grid; grid-template-columns:1fr 1fr;
+  align-items:center;
+  padding:120px 56px 80px;
+  position:relative; overflow:hidden;
+  gap:60px;
+}
+
+/* animated film-strip lines */
+.filmstrip {
+  position:absolute; inset:0; z-index:0; pointer-events:none;
+  display:flex; gap:60px; overflow:hidden; opacity:.04;
+}
+.fline {
+  width:1px; height:200%; background:linear-gradient(to bottom,transparent 0%,var(--gold) 30%,var(--gold) 70%,transparent 100%);
+  animation:filmMove 8s linear infinite;
+}
+.fline:nth-child(2){ animation-delay:-2s; }
+.fline:nth-child(3){ animation-delay:-4s; }
+.fline:nth-child(4){ animation-delay:-6s; }
+@keyframes filmMove { from{transform:translateY(-50%)} to{transform:translateY(0)} }
+
+.hero-glow {
+  position:absolute; width:600px; height:600px; border-radius:50%;
+  background:radial-gradient(circle,rgba(200,168,75,.1) 0%,transparent 70%);
+  top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:0;
+}
+
+/* LEFT — text */
+.hero-left { position:relative; z-index:2; }
+.eyebrow {
+  display:flex; align-items:center; gap:14px;
+  font-size:10px; letter-spacing:5px; text-transform:uppercase; color:var(--gold);
+  margin-bottom:22px;
+  opacity:0; animation:up .9s .2s forwards;
+}
+.eyebrow::before { content:''; width:30px; height:1px; background:var(--gold); }
+.hero-name {
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(64px,8vw,120px); font-weight:300; line-height:.9; letter-spacing:-2px;
+  opacity:0; animation:up .9s .4s forwards;
+}
+.hero-name em { display:block; font-style:italic; color:var(--gold); }
+.hero-sub {
+  font-size:15px; color:var(--muted); line-height:1.8; font-weight:300;
+  max-width:440px; margin-top:24px;
+  opacity:0; animation:up .9s .6s forwards;
+}
+.hero-badges {
+  display:flex; flex-wrap:wrap; gap:10px; margin-top:28px;
+  opacity:0; animation:up .9s .75s forwards;
+}
+.badge {
+  padding:7px 16px; border:1px solid var(--gold-dim);
+  font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--muted);
+  transition:all .3s;
+}
+.badge:hover { color:var(--gold); border-color:var(--gold); background:rgba(200,168,75,.05); }
+
+.hero-ctas {
+  display:flex; flex-wrap:wrap; gap:14px; margin-top:36px;
+  opacity:0; animation:up .9s .9s forwards;
+}
+.btn-gold {
+  background:var(--gold); color:#060606;
+  padding:14px 32px; text-decoration:none;
+  font-size:11px; letter-spacing:3px; text-transform:uppercase; font-weight:500;
+  position:relative; overflow:hidden; transition:all .3s; border:none; cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+}
+.btn-gold::before { content:''; position:absolute; inset:0; background:var(--gold-light); transform:translateX(-100%); transition:transform .3s; }
+.btn-gold:hover::before { transform:translateX(0); }
+.btn-gold span { position:relative; z-index:1; }
+.btn-wa {
+  display:flex; align-items:center; gap:10px;
+  background:rgba(37,211,102,.1); border:1px solid rgba(37,211,102,.3); color:#25d366;
+  padding:14px 28px; text-decoration:none;
+  font-size:11px; letter-spacing:2px; text-transform:uppercase; font-weight:500;
+  transition:all .3s;
+}
+.btn-wa:hover { background:rgba(37,211,102,.2); border-color:#25d366; }
+
+/* RIGHT — form card */
+.hero-right {
+  position:relative; z-index:2;
+  opacity:0; animation:up .9s .5s forwards;
+}
+.form-card {
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(200,168,75,.15);
+  padding:44px 40px;
+  position:relative;
+}
+.form-card::before {
+  content:''; position:absolute; top:-1px; left:-1px;
+  width:44px; height:44px;
+  border-top:2px solid var(--gold); border-left:2px solid var(--gold);
+}
+.form-card::after {
+  content:''; position:absolute; bottom:-1px; right:-1px;
+  width:44px; height:44px;
+  border-bottom:2px solid var(--gold); border-right:2px solid var(--gold);
+}
+.form-head {
+  font-family:'Cormorant Garamond',serif;
+  font-size:28px; font-weight:400; margin-bottom:6px;
+}
+.form-sub { font-size:12px; color:var(--muted); letter-spacing:1px; margin-bottom:30px; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.fg { display:flex; flex-direction:column; gap:7px; margin-bottom:16px; }
+.fg label { font-size:9px; letter-spacing:3px; text-transform:uppercase; color:rgba(200,168,75,.6); }
+.fg input, .fg select, .fg textarea {
+  background:rgba(255,255,255,.04); border:1px solid rgba(200,168,75,.12);
+  padding:12px 16px; color:var(--white); font-family:'DM Sans',sans-serif; font-size:13px;
+  outline:none; transition:border-color .3s; resize:none; width:100%;
+  -webkit-appearance:none; appearance:none;
+}
+.fg input:focus, .fg select:focus, .fg textarea:focus { border-color:var(--gold); }
+.fg select option { background:#111; }
+.fg textarea { height:100px; }
+.submit-btn {
+  width:100%; background:var(--gold); color:#060606; border:none; cursor:pointer;
+  padding:15px; font-size:11px; letter-spacing:4px; text-transform:uppercase;
+  font-weight:500; font-family:'DM Sans',sans-serif;
+  position:relative; overflow:hidden; transition:all .3s; margin-top:4px;
+}
+.submit-btn::before { content:''; position:absolute; inset:0; background:var(--gold-light); transform:translateX(-100%); transition:transform .3s; }
+.submit-btn:hover::before { transform:translateX(0); }
+.submit-btn span { position:relative; z-index:1; }
+.form-note { font-size:10px; color:var(--muted); text-align:center; margin-top:12px; letter-spacing:1px; }
+
+/* ─── SERVICES STRIP ─── */
+#services {
+  padding:80px 56px;
+  border-top:1px solid rgba(200,168,75,.08);
+  position:relative; z-index:2;
+}
+.strip-label { font-size:9px; letter-spacing:5px; text-transform:uppercase; color:rgba(200,168,75,.5); text-align:center; margin-bottom:50px; }
+.services-row { display:grid; grid-template-columns:repeat(6,1fr); gap:0; }
+.srv {
+  padding:36px 24px; border:1px solid rgba(200,168,75,.07);
+  text-align:center; position:relative; overflow:hidden; transition:all .4s;
+}
+.srv::after { content:''; position:absolute; bottom:0; left:50%; width:0; height:2px; background:var(--gold); transform:translateX(-50%); transition:width .4s; }
+.srv:hover { background:rgba(200,168,75,.04); }
+.srv:hover::after { width:60%; }
+.srv-icon { font-size:28px; display:block; margin-bottom:14px; }
+.srv-name { font-size:12px; font-weight:500; letter-spacing:.5px; margin-bottom:6px; }
+.srv-desc { font-size:11px; color:var(--muted); line-height:1.6; }
+
+/* ─── SOCIAL PROOF ─── */
+#proof {
+  padding:60px 56px;
+  background:rgba(200,168,75,.03);
+  border-top:1px solid rgba(200,168,75,.08);
+  border-bottom:1px solid rgba(200,168,75,.08);
+  display:flex; align-items:center; justify-content:space-between; gap:20px;
+  position:relative; z-index:2; flex-wrap:wrap;
+}
+.proof-stat { text-align:center; }
+.proof-num { font-family:'Bebas Neue',sans-serif; font-size:52px; color:var(--gold); line-height:1; }
+.proof-label { font-size:9px; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-top:4px; }
+.proof-divider { width:1px; height:60px; background:rgba(200,168,75,.15); }
+
+/* ─── TOOLS ─── */
+#tools {
+  padding:70px 56px; position:relative; z-index:2;
+  text-align:center;
+  border-bottom:1px solid rgba(200,168,75,.08);
+}
+.tools-label { font-size:9px; letter-spacing:5px; text-transform:uppercase; color:var(--muted); margin-bottom:30px; }
+.tools-row { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; }
+.tool {
+  padding:10px 22px; border:1px solid rgba(200,168,75,.15);
+  font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--muted);
+  transition:all .3s;
+}
+.tool:hover { color:var(--gold); border-color:var(--gold); background:rgba(200,168,75,.06); }
+
+/* ─── CONTACT STRIP ─── */
+#cta-strip {
+  padding:80px 56px; position:relative; z-index:2;
+  display:flex; align-items:center; justify-content:space-between; gap:30px;
+  flex-wrap:wrap;
+}
+.cta-text h2 { font-family:'Cormorant Garamond',serif; font-size:clamp(32px,4vw,56px); font-weight:300; }
+.cta-text h2 em { font-style:italic; color:var(--gold); }
+.cta-text p { font-size:14px; color:var(--muted); margin-top:10px; font-weight:300; }
+.cta-actions { display:flex; flex-direction:column; gap:14px; align-items:flex-end; }
+.wa-big {
+  display:flex; align-items:center; gap:14px;
+  background:linear-gradient(135deg,rgba(37,211,102,.12),rgba(37,211,102,.06));
+  border:1px solid rgba(37,211,102,.4); color:#25d366;
+  padding:18px 32px; text-decoration:none; transition:all .3s;
+}
+.wa-big:hover { background:rgba(37,211,102,.2); border-color:#25d366; }
+.wa-big-num { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px; }
+.wa-big-sub { font-size:10px; letter-spacing:2px; text-transform:uppercase; opacity:.7; }
+
+/* ─── FOOTER ─── */
+footer {
+  border-top:1px solid rgba(200,168,75,.1);
+  padding:28px 56px;
+  display:flex; align-items:center; justify-content:space-between;
+  position:relative; z-index:2; flex-wrap:wrap; gap:12px;
+}
+.ft-logo { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:4px; color:var(--gold); }
+.ft-copy { font-size:11px; color:var(--muted); letter-spacing:.5px; }
+.ft-links { display:flex; gap:20px; }
+.ft-links a { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); text-decoration:none; transition:color .3s; }
+.ft-links a:hover { color:var(--gold); }
+
+/* FLOATING WA BUTTON */
+.float-wa {
+  position:fixed; bottom:28px; right:28px; z-index:500;
+  width:56px; height:56px; border-radius:50%;
+  background:#25d366;
+  display:flex; align-items:center; justify-content:center;
+  text-decoration:none;
+  box-shadow:0 4px 24px rgba(37,211,102,.4);
+  transition:all .3s; animation:pulse 2s infinite;
+}
+.float-wa:hover { transform:scale(1.1); box-shadow:0 6px 30px rgba(37,211,102,.6); }
+@keyframes pulse {
+  0%,100% { box-shadow:0 4px 24px rgba(37,211,102,.4); }
+  50% { box-shadow:0 4px 36px rgba(37,211,102,.7); }
+}
+
+/* ANIMATIONS */
+@keyframes up { from{opacity:0;transform:translateY(32px)} to{opacity:1;transform:translateY(0)} }
+.reveal { opacity:0; transform:translateY(36px); transition:opacity .8s ease,transform .8s ease; }
+.reveal.on { opacity:1; transform:translateY(0); }
+
+/* SUCCESS MESSAGE */
+.form-success {
+  display:none; text-align:center; padding:40px 20px;
+}
+.form-success .tick { font-size:48px; display:block; margin-bottom:16px; }
+.form-success h3 { font-family:'Cormorant Garamond',serif; font-size:28px; color:var(--gold); margin-bottom:8px; }
+.form-success p { font-size:13px; color:var(--muted); }
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  nav { padding:18px 22px; }
+  #hero { grid-template-columns:1fr; padding:100px 22px 60px; gap:50px; }
+  .hero-name { font-size:clamp(56px,14vw,88px); }
+  .services-row { grid-template-columns:repeat(2,1fr); }
+  #proof { justify-content:center; gap:30px; }
+  .proof-divider { display:none; }
+  #tools, #services { padding:60px 22px; }
+  #cta-strip { padding:60px 22px; flex-direction:column; align-items:flex-start; }
+  .cta-actions { align-items:flex-start; }
+  footer { padding:24px 22px; flex-direction:column; align-items:center; text-align:center; }
+  body { cursor:auto; }
+  #cur, #cur-ring { display:none; }
+  .form-card { padding:32px 22px; }
+  .form-row { grid-template-columns:1fr; }
+}
+@media(max-width:600px){
+  .services-row { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-ring"></div>
+
+<!-- FLOATING WHATSAPP -->
+<a href="https://wa.me/916261851192" target="_blank" class="float-wa" title="Chat on WhatsApp">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</a>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">YB</div>
+  <a href="https://wa.me/916261851192" target="_blank" class="nav-wa">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    +91 62618 51192
+  </a>
+</nav>
+
+<!-- ─── HERO + FORM ─── -->
+<section id="hero">
+  <!-- film strip bg -->
+  <div class="filmstrip">
+    <div class="fline"></div><div class="fline"></div>
+    <div class="fline"></div><div class="fline"></div>
+  </div>
+  <div class="hero-glow"></div>
+
+  <!-- LEFT -->
+  <div class="hero-left">
+    <div class="eyebrow">Video Editor & Reels Specialist</div>
+    <h1 class="hero-name">
+      Yash<br>
+      <em>Bairagi</em>
+    </h1>
+    <p class="hero-sub">Turning raw footage into scroll-stopping content. Reels, brand videos & cinematic cuts that get watched, shared, and remembered.</p>
+    <div class="hero-badges">
+      <span class="badge">Premiere Pro</span>
+      <span class="badge">After Effects</span>
+      <span class="badge">DaVinci Resolve</span>
+      <span class="badge">3+ Years Exp</span>
+    </div>
+    <div class="hero-ctas">
+      <a href="#contact-form" class="btn-gold"><span>Get A Quote</span></a>
+      <a href="https://wa.me/916261851192" target="_blank" class="btn-wa">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Chat on WhatsApp
+      </a>
+    </div>
+  </div>
+
+  <!-- RIGHT — FORM -->
+  <div class="hero-right" id="contact-form">
+    <div class="form-card">
+      <h2 class="form-head">Start Your Project</h2>
+      <p class="form-sub">Get a response within 24 hours</p>
+
+      <!-- SUCCESS STATE -->
+      <div class="form-success" id="formSuccess">
+        <span class="tick">🎬</span>
+        <h3>Message Sent!</h3>
+        <p>Yash will get back to you within 24 hours.<br>Or chat directly on WhatsApp for faster response.</p>
+        <a href="https://wa.me/916261851192" target="_blank" class="btn-wa" style="display:inline-flex;margin-top:20px;justify-content:center;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          +91 62618 51192
+        </a>
+      </div>
+
+      <!-- FORM -->
+      <!-- ⚠️ FORMSPREE: Replace YOUR_FORM_ID below with your Formspree form ID -->
+      <!-- Get it free at formspree.io — create account → New Form → copy the ID -->
+      <form id="mainForm" action="https://formspree.io/f/xnjldyov" method="POST">
+        <div class="form-row">
+          <div class="fg">
+            <label>Your Name *</label>
+            <input type="text" name="name" placeholder="Rahul Sharma" required>
+          </div>
+          <div class="fg">
+            <label>Phone / WhatsApp</label>
+            <input type="tel" name="phone" placeholder="+91 98765 43210">
+          </div>
+        </div>
+        <div class="fg">
+          <label>Email Address *</label>
+          <input type="email" name="email" placeholder="rahul@example.com" required>
+        </div>
+        <div class="fg">
+          <label>Service Needed</label>
+          <select name="service">
+            <option value="" disabled selected>Select a service...</option>
+            <option>Instagram Reels</option>
+            <option>YouTube Video Edit</option>
+            <option>Brand / Product Video</option>
+            <option>Motion Graphics</option>
+            <option>Color Grading</option>
+            <option>Short Film / Event</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Tell me about your project</label>
+          <textarea name="message" placeholder="Brief description, deadline, budget..."></textarea>
+        </div>
+        <button type="submit" class="submit-btn" id="submitBtn">
+          <span id="submitText">Send Message →</span>
+        </button>
+        <p class="form-note">🔒 No spam. Direct reply within 24 hrs.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STATS ─── -->
+<div id="proof" class="reveal">
+  <div class="proof-stat"><div class="proof-num">3+</div><div class="proof-label">Years Experience</div></div>
+  <div class="proof-divider"></div>
+  <div class="proof-stat"><div class="proof-num">150+</div><div class="proof-label">Reels Delivered</div></div>
+  <div class="proof-divider"></div>
+  <div class="proof-stat"><div class="proof-num">50+</div><div class="proof-label">Happy Clients</div></div>
+  <div class="proof-divider"></div>
+  <div class="proof-stat"><div class="proof-num">24hr</div><div class="proof-label">Turnaround</div></div>
+</div>
+
+<!-- ─── SERVICES ─── -->
+<section id="services" class="reveal">
+  <p class="strip-label">What I Offer</p>
+  <div class="services-row">
+    <div class="srv">
+      <span class="srv-icon">🎬</span>
+      <div class="srv-name">Reels & Shorts</div>
+      <div class="srv-desc">Hook-first cuts designed to stop the scroll</div>
+    </div>
+    <div class="srv">
+      <span class="srv-icon">✨</span>
+      <div class="srv-name">Motion Graphics</div>
+      <div class="srv-desc">Animated titles, text & custom AE effects</div>
+    </div>
+    <div class="srv">
+      <span class="srv-icon">🎨</span>
+      <div class="srv-name">Color Grading</div>
+      <div class="srv-desc">Cinematic looks in DaVinci Resolve</div>
+    </div>
+    <div class="srv">
+      <span class="srv-icon">📱</span>
+      <div class="srv-name">Social Media Cuts</div>
+      <div class="srv-desc">Platform-optimised for every format</div>
+    </div>
+    <div class="srv">
+      <span class="srv-icon">🏢</span>
+      <div class="srv-name">Brand Videos</div>
+      <div class="srv-desc">Product reveals & promo content</div>
+    </div>
+    <div class="srv">
+      <span class="srv-icon">⚡</span>
+      <div class="srv-name">Fast Delivery</div>
+      <div class="srv-desc">Revision-friendly, on-time, every time</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TOOLS ─── -->
+<section id="tools" class="reveal">
+  <p class="tools-label">Tools & Software</p>
+  <div class="tools-row">
+    <span class="tool">Adobe Premiere Pro</span>
+    <span class="tool">After Effects</span>
+    <span class="tool">DaVinci Resolve</span>
+    <span class="tool">Adobe Audition</span>
+    <span class="tool">Photoshop</span>
+  </div>
+</section>
+
+<!-- ─── FINAL CTA STRIP ─── -->
+<section id="cta-strip" class="reveal">
+  <div class="cta-text">
+    <h2>Let's create something<br><em>worth watching.</em></h2>
+    <p>Available for freelance projects & long-term collaborations.</p>
+  </div>
+  <div class="cta-actions">
+    <a href="https://wa.me/916261851192" target="_blank" class="wa-big">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      <div>
+        <div class="wa-big-num">+91 62618 51192</div>
+        <div class="wa-big-sub">Tap to open WhatsApp</div>
+      </div>
+    </a>
+    <a href="#contact-form" class="btn-gold" style="text-align:center;"><span>Or Fill The Form Above</span></a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="ft-logo">YASH BAIRAGI</div>
+  <div class="ft-copy">© 2025 Yash Bairagi · Video Editor · Madhya Pradesh</div>
+  <div class="ft-links">
+    <a href="https://wa.me/916261851192" target="_blank">WhatsApp</a>
+    <a href="#">Instagram</a>
+    <a href="#">YouTube</a>
+  </div>
+</footer>
+
+<script>
+// Cursor
+const cur = document.getElementById('cur');
+const ring = document.getElementById('cur-ring');
+let mx=0, my=0, rx=0, ry=0;
+document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; cur.style.left=mx+'px'; cur.style.top=my+'px'; });
+(function loop(){ rx+=(mx-rx)*.13; ry+=(my-ry)*.13; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(loop); })();
+document.querySelectorAll('a,button,.srv,.tool').forEach(el => {
+  el.addEventListener('mouseenter',()=>ring.classList.add('h'));
+  el.addEventListener('mouseleave',()=>ring.classList.remove('h'));
+});
+
+// Scroll reveal
+const obs = new IntersectionObserver(entries => entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('on'); }), {threshold:.1});
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+// Formspree AJAX submit
+const form = document.getElementById('mainForm');
+const btn = document.getElementById('submitBtn');
+const btnTxt = document.getElementById('submitText');
+const success = document.getElementById('formSuccess');
+
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  btnTxt.textContent = 'Sending...';
+  btn.disabled = true;
+  try {
+    const res = await fetch(form.action, {
+      method: 'POST',
+      body: new FormData(form),
+      headers: { 'Accept': 'application/json' }
+    });
+    if (res.ok) {
+      form.style.display = 'none';
+      success.style.display = 'block';
+    } else {
+      btnTxt.textContent = 'Error — Try Again';
+      btn.disabled = false;
+    }
+  } catch {
+    btnTxt.textContent = 'Error — Try Again';
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
